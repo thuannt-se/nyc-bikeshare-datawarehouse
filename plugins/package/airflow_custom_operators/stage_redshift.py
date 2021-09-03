@@ -1,12 +1,12 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.models import BaseOperator
+from airflow.models.baseoperator import BaseOperator
 
 class StageToRedshiftOperator(BaseOperator):
     ui_color = '#358140'
     copy_sql = """copy {} 
                   from {} 
                   region {} credentials 'aws_iam_role={}'
-                  json {}
+                  {};
                """
     def __init__(self,
                  # Define your operators params (with defaults) here
@@ -17,8 +17,8 @@ class StageToRedshiftOperator(BaseOperator):
                  s3_bucket_id="",
                  s3_key="",
                  iam_role="",
-                 json="'auto ignorecase'",
-                 compupdate_statupdate_off = True,
+                 format_as="FORMAT AS PARQUET",
+                 compupdate_statupdate_off=True,
                  *args, **kwargs):
 
         super(StageToRedshiftOperator, self).__init__(*args, **kwargs)
@@ -30,7 +30,7 @@ class StageToRedshiftOperator(BaseOperator):
         self.s3_bucket_id = s3_bucket_id
         self.s3_key = s3_key
         self.iam_role = iam_role
-        self.json = json
+        self.format_as = format_as
         self.compupdate_statupdate_off = compupdate_statupdate_off
 
     def execute(self, context):
@@ -40,14 +40,13 @@ class StageToRedshiftOperator(BaseOperator):
         redshift.run("DELETE FROM {}".format(self.table))
 
         self.log.info("Copying data from S3 to Redshift")
-        rendered_key = self.s3_key
-        s3_path = "'s3://{}/{}'".format(self.s3_bucket_id, rendered_key)
+        s3_path = "'s3://{}/{}'".format(self.s3_bucket_id, self.s3_key)
         formatted_sql = StageToRedshiftOperator.copy_sql.format(
             self.table,
             s3_path,
             self.region,
             self.iam_role,
-            self.json
+            self.format_as
         )
         if(self.compupdate_statupdate_off):
             formatted_sql = formatted_sql + " COMPUPDATE OFF STATUPDATE OFF"

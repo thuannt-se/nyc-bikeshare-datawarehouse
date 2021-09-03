@@ -1,5 +1,5 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.models import BaseOperator
+from airflow.models.baseoperator import BaseOperator
 
 class CreateDropTableRedshiftOperator(BaseOperator):
     

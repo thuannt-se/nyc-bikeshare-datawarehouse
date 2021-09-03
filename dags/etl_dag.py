@@ -5,18 +5,31 @@ from airflow import DAG
 from airflow.utils.dates import days_ago
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
-from airflow_custom_operators.s3_file_transfer import S3FileTransferOperator
 from airflow.providers.amazon.aws.operators.emr_create_job_flow import EmrCreateJobFlowOperator
 from airflow.providers.amazon.aws.operators.emr_add_steps import EmrAddStepsOperator
 from airflow.providers.amazon.aws.sensors.emr_step import EmrStepSensor
 from airflow.providers.amazon.aws.operators.emr_terminate_job_flow import EmrTerminateJobFlowOperator
+from airflow_custom_operators.s3_file_transfer import S3FileTransferOperator
+from airflow_custom_operators.create_drop_tbl import CreateDropTableRedshiftOperator
 from helper.emr_operators_configuration import EmrOperatorsConfiguration
 from zipfile import ZipFile
+
+#Open SQL
+sql_dir = os.path.dirname(__file__)
+create_sql = "sql/create_tables.sql"
+drop_sql = "sql/drop_tables.sql"
+fd1 = open(os.path.join(sql_dir, create_sql), 'r')
+fd2 = open(os.path.join(sql_dir, drop_sql), 'r')
+CREATE_SQL = fd1.read()
+DROP_SQL = fd2.read()
+
 #Define local path here
 DEFAULT_DATA_PATH = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/zipped_data/"
 DEFAULT_UNZIPPED_DATA_PATH = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/unzipped_data/"
 WEATHER_FILE = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/weather_data/"
 SCRIPT_DATA = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/etl_script/"
+
+IAM_ROLE = "arn:aws:iam::507029168794:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
 
 #Define S3 name here:
 BUCKET_NAME = "nyc-bikeshare-trip-data"
@@ -191,15 +204,14 @@ with DAG(
         aws_conn_id="aws_default"
     )
 
-    # start_operator = CreateDropTableRedshiftOperator(
-    #     task_id='create_drop_refshift_table',
-    #     dag=dag,
-    #     aws_conn_id="aws_default",
-    #     redshift_conn_id="redshift",
-    #     drop_sql=DROP_SQL,
-    #     create_sql=CREATE_SQL,
-    #     provide_context=True
-    # )
+    start_operator = CreateDropTableRedshiftOperator(
+        task_id='create_drop_refshift_table',
+        dag=dag,
+        aws_conn_id="aws_default",
+        redshift_conn_id="redshift",
+        drop_sql=DROP_SQL,
+        create_sql=CREATE_SQL
+    )
     #
     # stage_events_to_redshift = StageToRedshiftOperator(
     #     task_id='Stage_events',
@@ -216,8 +228,7 @@ with DAG(
     # )
     #
     # stage_songs_to_redshift = StageToRedshiftOperator(
-    #     task_id='Stage_songs',
-    #     dag=dag,
+    #     task_id='Stage_trip_fact_data',
     #     aws_conn_id="aws_default",
     #     redshift_conn_id="redshift",
     #     table="staging_songs",
