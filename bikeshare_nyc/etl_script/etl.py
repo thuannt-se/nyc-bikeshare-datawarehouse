@@ -41,15 +41,13 @@ def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
       output_data -- s3 uri to store result files
     """
     for pattern in patterns:
-
         citibike_data = os.path.join(input_path, "citibike-tripdata/" + pattern + "*.csv")
-
 
         df = spark_session.read.csv(citibike_data, sep=",", inferSchema=True, header=True)
         # I subtract some record that have start station same as end station and with tripduration too short (under 300s)
         filtered_df = df.subtract(df.filter(df["start station id"] == df["end station id"]).filter(df["tripduration"] < 300))
         #Free memory for df
-        df = None
+        df.unpersist()
         dim_station_schema = StructType([ \
             StructField("station_id", IntegerType(), False), \
             StructField("name", StringType(), False), \
@@ -101,6 +99,9 @@ def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
             .write.partitionBy("year", "month").mode("overwrite")\
             .parquet(os.path.join(output_path, "tripfact-table"))
         dim_station_df.write.mode("overwrite").mode("overwrite").parquet(os.path.join(output_path, "dim-station-table"))
+        #Clean up to free memory
+        trip_fact_df.unpersist()
+        dim_station_df.unpersist()
 
 
 def create_weather_relation_wt_df(df, cols, spark, schema):
