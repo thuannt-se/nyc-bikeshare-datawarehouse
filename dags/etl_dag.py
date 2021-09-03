@@ -191,6 +191,90 @@ with DAG(
         aws_conn_id="aws_default"
     )
 
+    # start_operator = CreateDropTableRedshiftOperator(
+    #     task_id='create_drop_refshift_table',
+    #     dag=dag,
+    #     aws_conn_id="aws_default",
+    #     redshift_conn_id="redshift",
+    #     drop_sql=DROP_SQL,
+    #     create_sql=CREATE_SQL,
+    #     provide_context=True
+    # )
+    #
+    # stage_events_to_redshift = StageToRedshiftOperator(
+    #     task_id='Stage_events',
+    #     dag=dag,
+    #     aws_conn_id="aws_default",
+    #     redshift_conn_id="redshift",
+    #     table="staging_events",
+    #     s3_bucket_id="udacity-dend",
+    #     s3_key="log_data",
+    #     iam_role=IAM_ROLE,
+    #     json="'s3://udacity-dend/log_json_path.json'",
+    #     compupdate_statupdate_off=False,
+    #     provide_context=True
+    # )
+    #
+    # stage_songs_to_redshift = StageToRedshiftOperator(
+    #     task_id='Stage_songs',
+    #     dag=dag,
+    #     aws_conn_id="aws_default",
+    #     redshift_conn_id="redshift",
+    #     table="staging_songs",
+    #     s3_bucket_id="udacity-dend",
+    #     s3_key="song_data",
+    #     iam_role=IAM_ROLE,
+    #     provide_context=True
+    # )
+    #
+    # load_songplays_table = LoadFactOperator(
+    #     task_id='Load_songplays_fact_table',
+    #     redshift_conn_id="redshift",
+    #     table="songplays",
+    #     sql_insert=SqlQueries.songplay_table_insert,
+    #     dag=dag
+    # )
+    #
+    # load_user_dimension_table = LoadDimensionOperator(
+    #     task_id='Load_user_dim_table',
+    #     redshift_conn_id="redshift",
+    #     sql_insert=SqlQueries.user_table_insert,
+    #     table="users",
+    #     dag=dag
+    # )
+    #
+    # load_song_dimension_table = LoadDimensionOperator(
+    #     task_id='Load_song_dim_table',
+    #     redshift_conn_id="redshift",
+    #     sql_insert=SqlQueries.song_table_insert,
+    #     table="songs",
+    #     dag=dag
+    # )
+    #
+    # load_artist_dimension_table = LoadDimensionOperator(
+    #     task_id='Load_artist_dim_table',
+    #     redshift_conn_id="redshift",
+    #     sql_insert=SqlQueries.artist_table_insert,
+    #     table="artists",
+    #     dag=dag
+    # )
+    #
+    # load_time_dimension_table = LoadDimensionOperator(
+    #     task_id='Load_time_dim_table',
+    #     redshift_conn_id="redshift",
+    #     sql_insert=SqlQueries.time_table_insert,
+    #     table="time",
+    #     dag=dag
+    # )
+    #
+    # run_quality_checks = DataQualityOperator(
+    #     task_id='Run_data_quality_checks',
+    #     redshift_conn_id="redshift",
+    #     table="songplays",
+    #     table_id="playid",
+    #     dag=dag
+    # )
+
     start >> download_from_s3 >> unzip_data >> upload_unzipped_to_s3 >> upload_etl_script_to_s3
     start >> upload_weather_data_to_s3 >> upload_etl_script_to_s3
     upload_etl_script_to_s3 >> create_emr_cluster >> emr_step_execute_script >> step_checker >> terminate_emr_cluster

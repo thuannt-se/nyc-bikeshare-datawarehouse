@@ -1,24 +1,27 @@
 from pyspark.sql import SparkSession
 import os
 import argparse
-import io
-import pandas as pd
-from datetime import datetime
-from pyspark.sql import functions as F
-from pyspark.sql.types import StructType,StructField, StringType, IntegerType, DoubleType, LongType, TimestampType
-from pyspark.sql.functions import to_timestamp, monotonically_increasing_id, udf, col, year, month, dayofmonth, hour, weekofyear, date_format, date_trunc, when
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, LongType, TimestampType
+from pyspark.sql.functions import to_timestamp, monotonically_increasing_id, col, year, month, dayofmonth, hour,\
+                                    weekofyear, dayofweek, date_format, date_trunc, quarter
 
-def create_date_table(start='2019-01-01', end='2019-12-31'):
-    df = pd.DataFrame({"Date": pd.date_range(start, end, freq = "H")})
-    df['hour'] = df.Date.dt.hour
-    df['day'] = df.Date.dt.day
-    df["week"] = df.Date.dt.weekofyear
-    df['month'] = df.Date.dt.month
-    df["weekday"] = df.Date.dt.weekday
-    df["quarter"] = df.Date.dt.quarter
-    df["year"] = df.Date.dt.year
-    return df
-
+def generate_series(spark, start, stop, interval):
+    """
+    :param start  - lower bound, inclusive
+    :param stop   - upper bound, exclusive
+    :interval int - increment interval in seconds
+    """
+    spark = SparkSession.builder.getOrCreate()
+    # Determine start and stops in epoch seconds
+    start, stop = spark.createDataFrame(
+        [(start, stop)], ("start", "stop")
+    ).select(
+        [col(c).cast("timestamp").cast("long") for c in ("start", "stop")
+    ]).first()
+    # Create range with increments and cast to timestamp
+    return spark.range(start, stop, interval).select(
+        col("id").cast("timestamp").alias("Date")
+    )
 
 def create_spark_session():
     spark = SparkSession \
@@ -39,21 +42,17 @@ def process_citibike_tripdata(spark_session, input_path, output_path):
     """
     citibike_data = os.path.join(input_path, "citibike-tripdata/*.csv")
 
+
     df = spark_session.read.csv(citibike_data, sep=",", inferSchema=True, header=True)
     # I subtract some record that have start station same as end station and with tripduration too short (under 300s)
     filtered_df = df.subtract(df.filter(df["start station id"] == df["end station id"]).filter(df["tripduration"] < 300))
-    dim_time_schema = StructType([ \
-        StructField("Date", TimestampType(), True), \
-        StructField("hour", IntegerType(), True), \
-        StructField("day", IntegerType(), True), \
-        StructField("week", IntegerType(), True), \
-        StructField("month", IntegerType(), True), \
-        StructField("weekday", IntegerType(), True), \
-        StructField("quarter", IntegerType(), True), \
-        StructField("year", IntegerType(), True)
-    ])
 
-    dim_datetime_df = spark_session.createDataFrame(create_date_table(), schema=dim_time_schema)
+    generated_date_series = generate_series(spark_session, '2020-01-1', '2020-12-31', 60 * 60)
+
+    dim_datetime_df = generated_date_series.withColumn('hour', hour(generated_date_series.Date)).withColumn('day',dayofmonth(generated_date_series.Date)) \
+                            .withColumn('week', weekofyear(generated_date_series.Date)).withColumn('month', month(generated_date_series.Date)) \
+                            .withColumn('weekday', dayofweek(generated_date_series.Date)).withColumn('year', year(generated_date_series.Date)) \
+                            .withColumn('quarter', quarter(generated_date_series.Date))
 
     dim_station_schema = StructType([ \
         StructField("station_id", IntegerType(), False), \
@@ -74,7 +73,7 @@ def process_citibike_tripdata(spark_session, input_path, output_path):
                                           col("end station name").alias("name"), \
                                           col("end station longitude").alias("longitude"),
                                           col("end station latitude").alias("latitude")).where(
-        col("bikeid").isNotNull()).dropDuplicates().collect()
+                                          col("bikeid").isNotNull()).dropDuplicates().collect()
     end_station_df = spark_session.createDataFrame(data=end_station_data, schema=dim_station_schema)
 
     dim_station_df = start_station_df.union(end_station_df).dropDuplicates()
@@ -128,8 +127,9 @@ def process_weather_data(spark_session, input_path, output_path):
 
     weather_df = spark_session.read.option("header", "true").csv(weather_file)
 
-    data = weather_df.select("DATE", "PRCP", "SNOW", "SNWD", "TAVG",
-                             "TMAX", "TMIN", "WT01", "WT02", "WT03", "WT04", "WT05", "WT06",
+    data = weather_df.select(col("DATE").alias("date_time"), col("PRCP").alias("prcp"), col("SNOW").alias("snow"), col("SNWD").alias("snwd"),
+                             col("TAVG").alias("tavg"), col("TMAX").alias("tmax"), col("TMIN").alias("tmin"),
+                             "WT01", "WT02", "WT03", "WT04", "WT05", "WT06",
                              "WT08", "WT09", "WT11").collect()
 
     weather_fact_df = spark_session.createDataFrame(data)

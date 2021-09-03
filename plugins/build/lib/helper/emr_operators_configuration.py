@@ -49,9 +49,9 @@ class EmrOperatorsConfiguration:
                 "Args": [
                     "spark-submit",
                     "--deploy-mode",
-                    "cluster",
-                    "--master",
-                    "yarn",
+                    "client",
+                    #"--master",
+                    #"yarn",
                     "--conf",
                     "spark.yarn.submit.waitAppCompletion=true",
                     "s3://{{ params.s3_input_bucket_name }}/{{ params.s3_script_folder }}/{{ params.s3_script }}",
