@@ -26,3 +26,5 @@ dags/bikeshare_nyc/unzipped_data/202004-citibike-tripdata.csv
 dags/bikeshare_nyc/unzipped_data/202003-citibike-tripdata.csv
 dags/bikeshare_nyc/unzipped_data/202002-citibike-tripdata.csv
 dags/bikeshare_nyc/unzipped_data/202001-citibike-tripdata.csv
+*.crc
+*.parquet

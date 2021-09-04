@@ -37,7 +37,7 @@ CREATE TABLE if not exists trip_fact (
     start_station_id int4,
     end_station_id int4,
     bikeid int4,
-    usertype int4,
+    usertype varchar,
     gender int4,
     birth_year int4,
     CONSTRAINT trip_fact_pkey PRIMARY KEY (trip_id)

@@ -2,9 +2,9 @@
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
-This is an exam
-
-This is a long description.
+Citibike ETL pipeline and data warehouse is simple ETL tools that utilize the power of Airflow and AWS service to create 
+a pipeline for data extraction citibike open data, transform them and store them into datalake for later load them into 
+a data warehouse.
 
 ## Table of Contents
 
@@ -16,7 +16,9 @@ This is a long description.
 - [Contributing](#contributing)
 - [License](#license)
 
-## Project perquisite
+## Data modeling
+
+![Entity relation diagram](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/citibike-data-warehouse.jpeg)
 
 ### Any optional sections
 

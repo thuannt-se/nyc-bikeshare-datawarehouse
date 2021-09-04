@@ -16,7 +16,7 @@ class StageToRedshiftOperator(BaseOperator):
                  s3_bucket_id="",
                  s3_key="",
                  iam_role="",
-                 format_as="FORMAT AS PARQUET",
+                 format_as="CSV",
                  compupdate_statupdate_off=True,
                  *args, **kwargs):
 

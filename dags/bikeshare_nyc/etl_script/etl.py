@@ -43,7 +43,7 @@ def create_dim_station_df(spark: SparkSession, data):
 
 def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
     """
-      Extract citibike data and transform them into parquet files
+      Extract citibike data and transform them into csv files
       Keywork argument:
       spark -- key to return udf to get correct date
       input_data -- s3 uri to get the data
@@ -98,11 +98,11 @@ def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
 
         trip_fact_df = spark_session.createDataFrame(data=trip_fact_data, schema=trip_fact_schema)
 
-        trip_fact_df.write.mode("append")\
-            .parquet(os.path.join(output_path, "tripfact-table"))
+        trip_fact_df.write.mode("append").option('timestampFormat', 'yyyy-MM-dd HH:mm:ss')\
+            .csv(os.path.join(output_path, "tripfact-table"))
         final_dim_station_df.union(dim_station_df).dropDuplicates()
 
-    final_dim_station_df.write.mode("append").mode("overwrite").parquet(os.path.join(output_path, "dim-station-table"))
+    final_dim_station_df.write.mode("append").mode("overwrite").csv(os.path.join(output_path, "dim-station-table"))
 
 def create_weather_relation_wt_df(df, cols, spark, schema):
     emptyRDD = spark.sparkContext.emptyRDD()
@@ -170,10 +170,14 @@ def process_weather_data(spark_session, input_path, output_path):
         weather_fact_df.WT03).drop(weather_fact_df.WT04) \
         .drop(weather_fact_df.WT05).drop(weather_fact_df.WT06).drop(weather_fact_df.WT08).drop(
         weather_fact_df.WT09).drop(weather_fact_df.WT11)
-
-    weather_fact_df.write.mode("overwrite").parquet(os.path.join(output_path, "weather-fact-table"))
-    weather_type_df.write.mode("overwrite").parquet(os.path.join(output_path, "weather-type-table"))
-    weather_date_relation_type_df.write.mode("overwrite").parquet(os.path.join(output_path, "dim-datetime-weather-table"))
+    weather_fact_df = spark_session.createDataFrame(
+    weather_fact_df.select(to_timestamp(weather_fact_df['date_time']).alias('date_time'), weather_fact_df['prcp'].cast('double'), \
+                               weather_fact_df['snow'].cast('double'), weather_fact_df['snwd'].cast('double'), \
+                               weather_fact_df['tavg'].cast('double'), weather_fact_df['tmax'].cast('double'), \
+                               weather_fact_df['tmin'].cast('double')).collect())
+    weather_fact_df.write.mode("overwrite").option('timestampFormat', 'yyyy-MM-dd HH:mm:ss').csv(os.path.join(output_path, "weather-fact-table"))
+    weather_type_df.write.mode("overwrite").csv(os.path.join(output_path, "weather-type-table"))
+    weather_date_relation_type_df.write.mode("overwrite").option('timestampFormat', 'yyyy-MM-dd HH:mm:ss').csv(os.path.join(output_path, "dim-datetime-weather-table"))
 
 
 def process_date_time_data(spark_session, output):
@@ -186,7 +190,7 @@ def process_date_time_data(spark_session, output):
         .withColumn('weekday', dayofweek(generated_date_series.Date))\
         .withColumn('year', year(generated_date_series.Date)) \
         .withColumn('quarter', quarter(generated_date_series.Date))
-    dim_datetime_df.write.mode("overwrite").parquet(os.path.join(output, "dim-datetime-table"))
+    dim_datetime_df.write.mode("overwrite").option('timestampFormat', 'yyyy-MM-dd HH:mm:ss').csv(os.path.join(output, "dim-datetime-table"))
 
 
 if __name__ == "__main__":
