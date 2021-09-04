@@ -3,7 +3,7 @@ from airflow.models.baseoperator import BaseOperator
 
 class DataQualityOperator(BaseOperator):
     select_count = "Select count(*) from {}"
-    select_count_not_null = "Select count(*) from {} where {} is not null"
+    select_count_not_null = "Select count(*) from {} where {} is null"
     ui_color = '#89DA59'
 
     def __init__(self,
