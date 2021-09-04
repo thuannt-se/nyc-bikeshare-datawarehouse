@@ -11,6 +11,9 @@ from airflow.providers.amazon.aws.sensors.emr_step import EmrStepSensor
 from airflow.providers.amazon.aws.operators.emr_terminate_job_flow import EmrTerminateJobFlowOperator
 from airflow_custom_operators.s3_file_transfer import S3FileTransferOperator
 from airflow_custom_operators.create_drop_tbl import CreateDropTableRedshiftOperator
+from airflow_custom_operators.stage_redshift import StageToRedshiftOperator
+from airflow_custom_operators.data_quality import DataQualityOperator
+
 from helper.emr_operators_configuration import EmrOperatorsConfiguration
 from zipfile import ZipFile
 
@@ -29,14 +32,16 @@ DEFAULT_UNZIPPED_DATA_PATH = "/home/thuannt/Work/Programming/Git_projects/airflo
 WEATHER_FILE = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/weather_data/"
 SCRIPT_DATA = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/etl_script/"
 
-IAM_ROLE = "arn:aws:iam::507029168794:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
+IAM_ROLE = "aws_iam_role=arn:aws:iam::507029168794:role/thuannt-Redshift-role"
 
 #Define S3 name here:
 BUCKET_NAME = "nyc-bikeshare-trip-data"
 TRIP_DATA_FOLDER = "citibike-tripdata"
 WEATHER_DATA_FOLDER = "weather-data"
 SCRIPT_FOLDER = "etl-script"
+#Transformed dim and fact table s3 key
 TRANSFORMED_TABLE_FOLDER = "transformed-table"
+
 list_urls = ["https://s3.amazonaws.com/tripdata/202001-citibike-tripdata.csv.zip",
                  "https://s3.amazonaws.com/tripdata/202002-citibike-tripdata.csv.zip",
                  "https://s3.amazonaws.com/tripdata/202003-citibike-tripdata.csv.zip",
@@ -183,7 +188,8 @@ with DAG(
             "s3_script_folder": SCRIPT_FOLDER,
             "s3_script": "etl.py",
             "s3_trip_data_folder": TRIP_DATA_FOLDER,
-            "transformed_table": TRANSFORMED_TABLE_FOLDER
+            "transformed_table": TRANSFORMED_TABLE_FOLDER,
+            "year": "2020"
         }
     )
 
@@ -204,89 +210,86 @@ with DAG(
         aws_conn_id="aws_default"
     )
 
-    start_operator = CreateDropTableRedshiftOperator(
-        task_id='create_drop_refshift_table',
-        dag=dag,
-        aws_conn_id="aws_default",
+    create_table_redshift = CreateDropTableRedshiftOperator(
+        task_id='create_drop_redshift_table',
         redshift_conn_id="redshift",
         drop_sql=DROP_SQL,
         create_sql=CREATE_SQL
     )
-    #
-    # stage_events_to_redshift = StageToRedshiftOperator(
-    #     task_id='Stage_events',
-    #     dag=dag,
-    #     aws_conn_id="aws_default",
-    #     redshift_conn_id="redshift",
-    #     table="staging_events",
-    #     s3_bucket_id="udacity-dend",
-    #     s3_key="log_data",
-    #     iam_role=IAM_ROLE,
-    #     json="'s3://udacity-dend/log_json_path.json'",
-    #     compupdate_statupdate_off=False,
-    #     provide_context=True
-    # )
-    #
-    # stage_songs_to_redshift = StageToRedshiftOperator(
-    #     task_id='Stage_trip_fact_data',
-    #     aws_conn_id="aws_default",
-    #     redshift_conn_id="redshift",
-    #     table="staging_songs",
-    #     s3_bucket_id="udacity-dend",
-    #     s3_key="song_data",
-    #     iam_role=IAM_ROLE,
-    #     provide_context=True
-    # )
-    #
-    # load_songplays_table = LoadFactOperator(
-    #     task_id='Load_songplays_fact_table',
-    #     redshift_conn_id="redshift",
-    #     table="songplays",
-    #     sql_insert=SqlQueries.songplay_table_insert,
-    #     dag=dag
-    # )
-    #
-    # load_user_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_user_dim_table',
-    #     redshift_conn_id="redshift",
-    #     sql_insert=SqlQueries.user_table_insert,
-    #     table="users",
-    #     dag=dag
-    # )
-    #
-    # load_song_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_song_dim_table',
-    #     redshift_conn_id="redshift",
-    #     sql_insert=SqlQueries.song_table_insert,
-    #     table="songs",
-    #     dag=dag
-    # )
-    #
-    # load_artist_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_artist_dim_table',
-    #     redshift_conn_id="redshift",
-    #     sql_insert=SqlQueries.artist_table_insert,
-    #     table="artists",
-    #     dag=dag
-    # )
-    #
-    # load_time_dimension_table = LoadDimensionOperator(
-    #     task_id='Load_time_dim_table',
-    #     redshift_conn_id="redshift",
-    #     sql_insert=SqlQueries.time_table_insert,
-    #     table="time",
-    #     dag=dag
-    # )
-    #
-    # run_quality_checks = DataQualityOperator(
-    #     task_id='Run_data_quality_checks',
-    #     redshift_conn_id="redshift",
-    #     table="songplays",
-    #     table_id="playid",
-    #     dag=dag
-    # )
+
+    stage_weather_fact_to_redshift = StageToRedshiftOperator(
+        task_id='copy_weather_fact_table',
+        redshift_conn_id="redshift",
+        table="weather_fact",
+        s3_bucket_id=BUCKET_NAME,
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/weather-fact-table/",
+        iam_role=IAM_ROLE,
+    )
+
+    stage_weather_type_to_redshift = StageToRedshiftOperator(
+        task_id='copy_weather_type_data',
+        redshift_conn_id="redshift",
+        table="weather-type",
+        s3_bucket_id=BUCKET_NAME,
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/weather-type-table/",
+        iam_role=IAM_ROLE,
+    )
+
+    stage_weather_type_relation_to_redshift = StageToRedshiftOperator(
+        task_id='copy_weather_type_relation_data',
+        redshift_conn_id="redshift",
+        table="date_with_weather_type",
+        s3_bucket_id=BUCKET_NAME,
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/dim-datetime-weather-table/",
+        iam_role=IAM_ROLE,
+    )
+
+    stage_trip_fact_to_redshift = StageToRedshiftOperator(
+        task_id='copy_tripdata_fact',
+        redshift_conn_id="redshift",
+        table="trip_fact",
+        s3_bucket_id=BUCKET_NAME,
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/tripfact-table/",
+        iam_role=IAM_ROLE,
+    )
+
+    stage_dim_station_to_redshift = StageToRedshiftOperator(
+        task_id='copy_dim_station',
+        redshift_conn_id="redshift",
+        table="dim_station",
+        s3_bucket_id=BUCKET_NAME,
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/dim-station-table/",
+        iam_role=IAM_ROLE,
+    )
+
+    stage_dim_datetime_to_redshift = StageToRedshiftOperator(
+        task_id='copy_dim_datetime',
+        redshift_conn_id="redshift",
+        table="dim_datetime",
+        s3_bucket_id=BUCKET_NAME,
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/dim-datetime-table/",
+        iam_role=IAM_ROLE,
+    )
+
+    run_quality_checks = DataQualityOperator(
+        task_id='Run_data_quality_checks',
+        redshift_conn_id="redshift",
+        table="trip_fact",
+        table_id="trip_id",
+    )
+    run_quality_weather_checks = DataQualityOperator(
+        task_id='Run_weather_data_quality_checks',
+        redshift_conn_id="redshift",
+        table="weather_fact",
+        table_id="date_time",
+    )
 
     start >> download_from_s3 >> unzip_data >> upload_unzipped_to_s3 >> upload_etl_script_to_s3
     start >> upload_weather_data_to_s3 >> upload_etl_script_to_s3
     upload_etl_script_to_s3 >> create_emr_cluster >> emr_step_execute_script >> step_checker >> terminate_emr_cluster
+
+    terminate_emr_cluster >> create_table_redshift >> [stage_weather_fact_to_redshift, stage_trip_fact_to_redshift]
+
+    stage_weather_fact_to_redshift >> [stage_weather_type_to_redshift, stage_weather_type_relation_to_redshift] >> run_quality_weather_checks
+    stage_trip_fact_to_redshift >> [stage_dim_station_to_redshift, stage_dim_datetime_to_redshift] >> run_quality_checks
 

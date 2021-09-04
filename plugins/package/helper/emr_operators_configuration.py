@@ -58,7 +58,7 @@ class EmrOperatorsConfiguration:
                     "--input",
                     "s3://{{ params.s3_input_bucket_name }}/",
                     "--output",
-                    "s3://{{ params.s3_input_bucket_name }}/{{ params.transformed_table }}/"
+                    "s3://{{ params.s3_input_bucket_name }}/{{ params.transformed_table }}/{{ params.year }}/"
                 ],
             },
         }

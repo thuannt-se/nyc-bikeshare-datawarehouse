@@ -3,15 +3,15 @@ import os
 import argparse
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, LongType, TimestampType
 from pyspark.sql.functions import to_timestamp, monotonically_increasing_id, col, year, month, dayofmonth, hour,\
-                                    weekofyear, dayofweek, date_format, date_trunc, quarter
+                                    weekofyear, dayofweek, date_format, quarter
 
 def generate_series(spark, start, stop, interval):
     """
+    :param spark  - input spark session
     :param start  - lower bound, inclusive
     :param stop   - upper bound, exclusive
     :interval int - increment interval in seconds
     """
-    spark = SparkSession.builder.getOrCreate()
     # Determine start and stops in epoch seconds
     start, stop = spark.createDataFrame(
         [(start, stop)], ("start", "stop")
@@ -32,6 +32,15 @@ def create_spark_session():
         .getOrCreate()
     return spark
 
+def create_dim_station_df(spark: SparkSession, data):
+    dim_station_schema = StructType([ \
+        StructField("station_id", IntegerType(), False), \
+        StructField("name", StringType(), False), \
+        StructField("longitude", DoubleType(), False), \
+        StructField("latitude", DoubleType(), False)
+    ])
+    return spark.createDataFrame(data=data, schema=dim_station_schema)
+
 def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
     """
       Extract citibike data and transform them into parquet files
@@ -40,18 +49,14 @@ def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
       input_data -- s3 uri to get the data
       output_data -- s3 uri to store result files
     """
+    final_dim_station_df = create_dim_station_df(spark_session, data=[])
     for pattern in patterns:
         citibike_data = os.path.join(input_path, "citibike-tripdata/" + pattern + "*.csv")
 
         df = spark_session.read.csv(citibike_data, sep=",", inferSchema=True, header=True)
         # I subtract some record that have start station same as end station and with tripduration too short (under 300s)
         filtered_df = df.subtract(df.filter(df["start station id"] == df["end station id"]).filter(df["tripduration"] < 300))
-        dim_station_schema = StructType([ \
-            StructField("station_id", IntegerType(), False), \
-            StructField("name", StringType(), False), \
-            StructField("longitude", DoubleType(), False), \
-            StructField("latitude", DoubleType(), False)
-        ])
+
 
         start_station_data = filtered_df.select(col("start station id").alias("station_id"),
                                                 col("start station name").alias("name"), \
@@ -59,14 +64,14 @@ def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
                                                 col("start station latitude").alias("latitude")).where(
             col("bikeid").isNotNull()).dropDuplicates().collect()
 
-        start_station_df = spark_session.createDataFrame(data=start_station_data, schema=dim_station_schema)
+        start_station_df = create_dim_station_df(spark_session, data=start_station_data)
 
         end_station_data = filtered_df.select(col("end station id").alias("station_id"),
                                               col("end station name").alias("name"), \
                                               col("end station longitude").alias("longitude"),
                                               col("end station latitude").alias("latitude")).where(
                                               col("bikeid").isNotNull()).dropDuplicates().collect()
-        end_station_df = spark_session.createDataFrame(data=end_station_data, schema=dim_station_schema)
+        end_station_df = create_dim_station_df(spark_session, data=end_station_data)
 
         dim_station_df = start_station_df.union(end_station_df).dropDuplicates()
 
@@ -84,8 +89,8 @@ def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
         ])
 
         trip_fact_data = filtered_df.withColumn("trip_id", monotonically_increasing_id()) \
-            .withColumn("start_time", date_trunc("hour", to_timestamp(col("starttime")))) \
-            .withColumn("end_time", date_trunc("hour", to_timestamp(col("stoptime")))) \
+            .withColumn("start_time", date_format(to_timestamp(col("starttime")), "yyyy-MM-dd HH:mm:ss").cast('timestamp')) \
+            .withColumn("end_time", date_format(to_timestamp(col("stoptime")), "yyyy-MM-dd HH:mm:ss").cast('timestamp')) \
             .select(col("trip_id"), col("tripduration").alias("duration"), col("start_time"), col("end_time"),
                     col("start station id").alias("start_station_id"),
                     col("end station id").alias("end_station_id"), col("bikeid"), col("usertype"), col("gender"),
@@ -93,17 +98,18 @@ def process_citibike_tripdata(spark_session, input_path, output_path, patterns):
 
         trip_fact_df = spark_session.createDataFrame(data=trip_fact_data, schema=trip_fact_schema)
 
-        trip_fact_df.withColumn("year", year(col("start_time"))).withColumn("month", month(col("start_time")))\
-            .write.partitionBy("year", "month").mode("overwrite")\
+        trip_fact_df.write.mode("append")\
             .parquet(os.path.join(output_path, "tripfact-table"))
-        dim_station_df.write.mode("overwrite").mode("overwrite").parquet(os.path.join(output_path, "dim-station-table"))
+        final_dim_station_df.union(dim_station_df).dropDuplicates()
+
+    final_dim_station_df.write.mode("append").mode("overwrite").parquet(os.path.join(output_path, "dim-station-table"))
 
 def create_weather_relation_wt_df(df, cols, spark, schema):
     emptyRDD = spark.sparkContext.emptyRDD()
     result = spark.createDataFrame(emptyRDD, schema)
     for i in cols:
         rowDict = []
-        data = df.select(to_timestamp("DATE").alias("date_time"), i).collect()
+        data = df.select(to_timestamp("date_time").alias("date_time"), i).collect()
         for row in data:
             if row[i] != None and row[i].strip() == "1":
                 rowDict.append((row["date_time"], int(i[-2:])))
@@ -167,7 +173,7 @@ def process_weather_data(spark_session, input_path, output_path):
 
     weather_fact_df.write.mode("overwrite").parquet(os.path.join(output_path, "weather-fact-table"))
     weather_type_df.write.mode("overwrite").parquet(os.path.join(output_path, "weather-type-table"))
-    weather_date_relation_type_df.write.mode("overwrite").parquet(os.path.join(output_path, "dim-datetime-table"))
+    weather_date_relation_type_df.write.mode("overwrite").parquet(os.path.join(output_path, "dim-datetime-weather-table"))
 
 
 def process_date_time_data(spark_session, output):
@@ -189,7 +195,7 @@ if __name__ == "__main__":
     parser.add_argument("--input", type=str, default="s3://nyc-bikeshare-trip-data/")
     parser.add_argument("--output", type=str, default="s3://thuannt.se-default-bucket/")
     args = parser.parse_args()
-    process_citibike_tripdata(spark_session, args.input, args.output, ["*01-", "*02-", "*03", "*04", "*05", "*06",
-                                                                       "*07", "*08", "*09", "*10, *11, *12"])
+    process_citibike_tripdata(spark_session, args.input, args.output, ["*01-", "*02-", "*03-", "*04-", "*05-", "*06-",
+                                                                       "*07-", "*08-", "*09-", "*10-", "*11-", "*12-"])
     process_weather_data(spark_session, args.input, args.output)
     process_date_time_data(spark_session, args.output)

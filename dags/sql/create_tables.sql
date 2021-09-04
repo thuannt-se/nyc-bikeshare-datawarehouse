@@ -5,13 +5,13 @@ CREATE TABLE if not exists weather_fact (
 	snwd numeric,
 	tavg numeric,
 	tmax numeric,
-	tmin numeric
+	tmin numeric,
 	CONSTRAINT weather_fact_pkey PRIMARY KEY (date_time)
 );
 
 CREATE TABLE if not exists date_with_weather_type (
 	date_time timestamp NOT NULL,
-	weather_type_id int4
+	weather_type_id int4,
 	CONSTRAINT date_with_weather_type_pkey PRIMARY KEY (date_time)
 );
 
@@ -39,7 +39,7 @@ CREATE TABLE if not exists trip_fact (
     bikeid int4,
     usertype int4,
     gender int4,
-    birth_year int4
+    birth_year int4,
     CONSTRAINT trip_fact_pkey PRIMARY KEY (trip_id)
 );
 
