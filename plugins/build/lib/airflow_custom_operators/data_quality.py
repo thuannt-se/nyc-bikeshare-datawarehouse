@@ -23,7 +23,7 @@ class DataQualityOperator(BaseOperator):
         self.table_id = table_id
 
     def checkDataNotEmpty(self, hook):
-        records = hook.get_records(DataQualityOperator.select_stmt.format(self.table))
+        records = hook.get_records(DataQualityOperator.select_count.format(self.table))
         if len(records) < 1 or len(records[0]) < 1:
             raise ValueError(f"Data quality check failed. {self.table} returned no results")
         num_records = records[0][0]

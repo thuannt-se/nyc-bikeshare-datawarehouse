@@ -5,7 +5,7 @@ class StageToRedshiftOperator(BaseOperator):
     ui_color = '#358140'
     copy_sql = """copy {} 
                   from {} 
-                  region {} credentials 'aws_iam_role={}'
+                  credentials 'aws_iam_role={}'
                   {};
                """
     def __init__(self,
@@ -13,7 +13,6 @@ class StageToRedshiftOperator(BaseOperator):
                  # Example:
                  redshift_conn_id="",
                  table="",
-                 region="'us-west-2'",
                  s3_bucket_id="",
                  s3_key="",
                  iam_role="",
@@ -26,7 +25,6 @@ class StageToRedshiftOperator(BaseOperator):
         # Example:
         self.redshift_conn_id = redshift_conn_id
         self.table = table
-        self.region = region
         self.s3_bucket_id = s3_bucket_id
         self.s3_key = s3_key
         self.iam_role = iam_role
@@ -44,13 +42,9 @@ class StageToRedshiftOperator(BaseOperator):
         formatted_sql = StageToRedshiftOperator.copy_sql.format(
             self.table,
             s3_path,
-            self.region,
             self.iam_role,
             self.format_as
         )
-        if(self.compupdate_statupdate_off):
-            formatted_sql = formatted_sql + " COMPUPDATE OFF STATUPDATE OFF"
-        
         redshift.run(formatted_sql)
         self.log.info('StageToRedshiftOperator done')
 

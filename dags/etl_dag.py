@@ -10,6 +10,7 @@ from airflow.providers.amazon.aws.operators.emr_add_steps import EmrAddStepsOper
 from airflow.providers.amazon.aws.sensors.emr_step import EmrStepSensor
 from airflow.providers.amazon.aws.operators.emr_terminate_job_flow import EmrTerminateJobFlowOperator
 from airflow_custom_operators.s3_file_transfer import S3FileTransferOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow_custom_operators.create_drop_tbl import CreateDropTableRedshiftOperator
 from airflow_custom_operators.stage_redshift import StageToRedshiftOperator
 from airflow_custom_operators.data_quality import DataQualityOperator
@@ -17,22 +18,21 @@ from airflow_custom_operators.data_quality import DataQualityOperator
 from helper.emr_operators_configuration import EmrOperatorsConfiguration
 from zipfile import ZipFile
 
-#Open SQL
-sql_dir = os.path.dirname(__file__)
+# Define file path here
+current_dir = os.path.dirname(__file__)
 create_sql = "sql/create_tables.sql"
 drop_sql = "sql/drop_tables.sql"
-fd1 = open(os.path.join(sql_dir, create_sql), 'r')
-fd2 = open(os.path.join(sql_dir, drop_sql), 'r')
+fd1 = open(os.path.join(current_dir, create_sql), 'r')
+fd2 = open(os.path.join(current_dir, drop_sql), 'r')
 CREATE_SQL = fd1.read()
 DROP_SQL = fd2.read()
 
-#Define local path here
-DEFAULT_DATA_PATH = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/zipped_data/"
-DEFAULT_UNZIPPED_DATA_PATH = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/unzipped_data/"
-WEATHER_FILE = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/weather_data/"
-SCRIPT_DATA = "/home/thuannt/Work/Programming/Git_projects/airflow/nyc-bikeshare-datawarehouse/bikeshare_nyc/etl_script/"
+DEFAULT_DATA_PATH = os.path.join(current_dir, "bikeshare_nyc/zipped_data/")
+DEFAULT_UNZIPPED_DATA_PATH = os.path.join(current_dir, "bikeshare_nyc/unzipped_data/")
+WEATHER_FILE = os.path.join(current_dir, "bikeshare_nyc/weather_data/")
+SCRIPT_DATA = os.path.join(current_dir, "bikeshare_nyc/etl_script/")
 
-IAM_ROLE = "aws_iam_role=arn:aws:iam::507029168794:role/thuannt-Redshift-role"
+IAM_ROLE = "arn:aws:iam::507029168794:role/thuannt-Redshift-role"
 
 #Define S3 name here:
 BUCKET_NAME = "nyc-bikeshare-trip-data"
@@ -210,11 +210,10 @@ with DAG(
         aws_conn_id="aws_default"
     )
 
-    create_table_redshift = CreateDropTableRedshiftOperator(
+    create_table_redshift = PostgresOperator(
         task_id='create_drop_redshift_table',
-        redshift_conn_id="redshift",
-        drop_sql=DROP_SQL,
-        create_sql=CREATE_SQL
+        postgres_conn_id="redshift",
+        sql=DROP_SQL + CREATE_SQL
     )
 
     stage_weather_fact_to_redshift = StageToRedshiftOperator(
@@ -222,16 +221,16 @@ with DAG(
         redshift_conn_id="redshift",
         table="weather_fact",
         s3_bucket_id=BUCKET_NAME,
-        s3_key=TRANSFORMED_TABLE_FOLDER + "/weather-fact-table/",
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/2020/weather-fact-table/",
         iam_role=IAM_ROLE,
     )
 
     stage_weather_type_to_redshift = StageToRedshiftOperator(
         task_id='copy_weather_type_data',
         redshift_conn_id="redshift",
-        table="weather-type",
+        table="weather_type",
         s3_bucket_id=BUCKET_NAME,
-        s3_key=TRANSFORMED_TABLE_FOLDER + "/weather-type-table/",
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/2020/weather-type-table/",
         iam_role=IAM_ROLE,
     )
 
@@ -240,7 +239,7 @@ with DAG(
         redshift_conn_id="redshift",
         table="date_with_weather_type",
         s3_bucket_id=BUCKET_NAME,
-        s3_key=TRANSFORMED_TABLE_FOLDER + "/dim-datetime-weather-table/",
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/2020/dim-datetime-weather-table/",
         iam_role=IAM_ROLE,
     )
 
@@ -249,7 +248,7 @@ with DAG(
         redshift_conn_id="redshift",
         table="trip_fact",
         s3_bucket_id=BUCKET_NAME,
-        s3_key=TRANSFORMED_TABLE_FOLDER + "/tripfact-table/",
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/2020/tripfact-table/",
         iam_role=IAM_ROLE,
     )
 
@@ -258,7 +257,7 @@ with DAG(
         redshift_conn_id="redshift",
         table="dim_station",
         s3_bucket_id=BUCKET_NAME,
-        s3_key=TRANSFORMED_TABLE_FOLDER + "/dim-station-table/",
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/2020/dim-station-table/",
         iam_role=IAM_ROLE,
     )
 
@@ -267,7 +266,7 @@ with DAG(
         redshift_conn_id="redshift",
         table="dim_datetime",
         s3_bucket_id=BUCKET_NAME,
-        s3_key=TRANSFORMED_TABLE_FOLDER + "/dim-datetime-table/",
+        s3_key=TRANSFORMED_TABLE_FOLDER + "/2020/dim-datetime-table/",
         iam_role=IAM_ROLE,
     )
 
