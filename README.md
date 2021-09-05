@@ -9,14 +9,13 @@ a data warehouse.
 ## Table of Contents
 
 - [Project Goal](#Project Goal)
-- [Technologies & why I choose them](#Technologies & why I choose them)
-- [Data modeling & dictionary](#Data modeling & dictionary)
+- [Technologies why I choose them]()
+- [Data modeling & dictionary]()
 - [Data usage](#Data usage)
-- [Data Pipeline & update schedule](#Dag Pipeline & update schedule)
+- [Data Pipeline & update schedule]()
+- [Install](#Install)
 - [Usage](#usage)
-- [API](#api)
-- [Contributing](#contributing)
-- [License](#license)
+- [Final Write up](#Final Write up)
 
 ## Project Goal
 After analyzing the open trip data of the year 2020 from citi bike  
@@ -42,12 +41,15 @@ data warehouse as a source of truth database for any kind of data explore to ide
 - AWS Redshift cluster
   - Cloud database service that optimized for SQL.
   - Very suitable for data warehouse due to its storage capacity and CPU power
+  - Redshift has capability to process a large number of simultaneous queries.
 
-## Data modeling & dictionary
+##Data modeling & dictionary
 Data modeling is described as below image.
 ![Entity relation diagram](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/citibike-data-warehouse.jpeg)
 trip_fact entity would have 2 dimensions entity: dim_datetime, dim_station
+![Dictionary](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/trip_fact_dictionary.png)
 weather_fact entity would have 1 dimensions entity: dim_datetime and one-to-many relationship with weather_type
+![Dictionary](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/weather_fact_dictionary.png)
 
 ##Data usage
 Using the final database, we can explore the data and understand user behavior on using bike share service in New York City
@@ -100,5 +102,10 @@ After the pipline finish it's process. You can checkout the result in Redshift c
 ## Final Write up
 1. By utilizing the power of cloud computing (storage, data processing, etc...) it should not be a problem if our data
 source increased 100x times in file number. Since we handle extract and transform data by each file. 
-2. However, the bottleneck could be author local machine because it download source data before upload it to AWS S3
-3. Using Redshift, it should not be a problem if the cluster accessed by multiple people at a same time.
+2. However, the bottleneck could be the author local machine because it download source data to local machine before upload it to AWS S3
+3. The pipelines would be run on a daily basis by 7 am every day: The pipeline is not built for daily basis,
+It's suitable to run the pipeline monthly or yearly because it depends on how source data (citibike trip data) is updated
+4. Using Redshift, it should not be a problem if the cluster accessed by multiple people at a same time.
+5. The number of trip made by user for each month in year are from more than 500k trip to more than 2 million trip. 
+![Source](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/Data_row_count_fromJupyterLab.png)
+The picture is a number of trips made by New York city people in August 2020 and the pipeline process the data for 2020 year
