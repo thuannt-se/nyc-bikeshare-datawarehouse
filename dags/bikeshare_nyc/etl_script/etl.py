@@ -174,7 +174,7 @@ def process_weather_data(spark_session, input_path, output_path):
     weather_fact_df.select(to_timestamp(weather_fact_df['date_time']).alias('date_time'), weather_fact_df['prcp'].cast('double'), \
                                weather_fact_df['snow'].cast('double'), weather_fact_df['snwd'].cast('double'), \
                                weather_fact_df['tavg'].cast('double'), weather_fact_df['tmax'].cast('double'), \
-                               weather_fact_df['tmin'].cast('double')).collect())
+                               weather_fact_df['tmin'].cast('double')).collect()).dropDuplicates()
     weather_fact_df.write.mode("overwrite").option('timestampFormat', 'yyyy-MM-dd HH:mm:ss').csv(os.path.join(output_path, "weather-fact-table"))
     weather_type_df.write.mode("overwrite").csv(os.path.join(output_path, "weather-type-table"))
     weather_date_relation_type_df.write.mode("overwrite").option('timestampFormat', 'yyyy-MM-dd HH:mm:ss').csv(os.path.join(output_path, "dim-datetime-weather-table"))

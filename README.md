@@ -8,10 +8,11 @@ a data warehouse.
 
 ## Table of Contents
 
-- [Project Goal](#Project Goal
 - [Project Goal](#Project Goal)
-- [Technology](#Technology)
-- [Data Pipeline](#Dag Pipeline)
+- [Technologies & why I choose them](#Technologies & why I choose them)
+- [Data modeling & dictionary](#Data modeling & dictionary)
+- [Data usage](#Data usage)
+- [Data Pipeline & update schedule](#Dag Pipeline & update schedule)
 - [Usage](#usage)
 - [API](#api)
 - [Contributing](#contributing)
@@ -22,23 +23,43 @@ After analyzing the open trip data of the year 2020 from citi bike
 ([https://s3.amazonaws.com/tripdata/index.html](https://s3.amazonaws.com/tripdata/index.html)),
 I combine the trip data with weather data from NOAA to create a **data warehouse** of citi bike 2020 trip data combine with 
 2020 weather data of New York city. User can use this data warehouse to build up a dashboard, create BI report or use this
-data warehouse as an source of truth database for any kind of data explore to identity user basis
+data warehouse as a source of truth database for any kind of data explore to identity user basis
 
-##Technology:
-- Airflow 2.0
-- AWS S3
-- AWS EMR cluster _(heavily used  this project)_
+##Technologies & why I choose them
+- **Airflow 2.0**
+  - It's newest Airflow version released on December 2020
+  - It has massive Scheduler performance improvements
+  - Better UI
+  - And more...
+  - Find out more at: https://airflow.apache.org/blog/airflow-two-point-oh-is-here/
+- AWS S3:
+  - Simple but powerful service to store and retrieve large dataset
+  - Easy to use and integrate with other AWS service
+- AWS EMR cluster _(heavily used  this project)_:
+  - Powerful service provided by Amazon to process and transform large dataset.
+  - Easy to use, debug error.
+  - Already installed Spark package.
 - AWS Redshift cluster
+  - Cloud database service that optimized for SQL.
+  - Very suitable for data warehouse due to its storage capacity and CPU power
 
-## Data modeling & 
+## Data modeling & dictionary
 Data modeling is described as below image.
 ![Entity relation diagram](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/citibike-data-warehouse.jpeg)
 trip_fact entity would have 2 dimensions entity: dim_datetime, dim_station
 weather_fact entity would have 1 dimensions entity: dim_datetime and one-to-many relationship with weather_type
 
+##Data usage
+Using the final database, we can explore the data and understand user behavior on using bike share service in New York City
+For example we can answer some questions:
+- How many trips are made by New york people make on monthly and yearly basic?
+- How gender affect on bike share service usage frequently and number of trip made by male and female.
+- How many hours people spent for riding a bike throughout the year?
+- Which month has the highest number of bike trips and lowest bike trips?
+- How weather affect on user behavior?
+
 ## Data Pipeline & update basis
 The source data can be updated monthly or yearly. The data pipeline should not depend on the interval of data.
-
 The DAG runs through multiple tasks as below image. 
 
 ![Data pipeline](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/dag_pipeline.png)Data pipeline
@@ -50,7 +71,6 @@ The DAG runs through multiple tasks as below image.
 **Requirment**: 
 - Airflow version >= 2.
 - python3
-
 Please make sure that your computer install the custom operators as python package before run airflow
 ```
 #From git folder, navigate to plugins folder
