@@ -48,6 +48,7 @@ Data modeling is described as below image.
 ![Entity relation diagram](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/citibike-data-warehouse.jpeg)
 trip_fact entity would have 2 dimensions entity: dim_datetime, dim_station
 ![Dictionary](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/trip_fact_dictionary.png)
+
 weather_fact entity would have 1 dimensions entity: dim_datetime and one-to-many relationship with weather_type
 ![Dictionary](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/weather_fact_dictionary.png)
 
@@ -99,6 +100,7 @@ airflow webserver
 2. Run nyc_bikeshare_datawarehouse dag.
 
 After the pipline finish it's process. You can checkout the result in Redshift cluster.
+![tripdb](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/Screenshot%202021-09-05%20at%2014-08-11%20Redshift.png)
 ## Final Write up
 1. By utilizing the power of cloud computing (storage, data processing, etc...) it should not be a problem if our data
 source increased 100x times in file number. Since we handle extract and transform data by each file. 
