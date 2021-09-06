@@ -9,10 +9,10 @@ a data warehouse.
 ## Table of Contents
 
 - [Project Goal](#Project Goal)
-- [Technologies why I choose them](#Technologies & why I choose them)
-- [Data modeling & dictionary](#Data modeling & dictionary)
+- [Technologies why I choose them]()
+- [Data modeling & dictionary]()
 - [Data usage](#Data usage)
-- [Data Pipeline & update schedule](#Data Pipeline & update schedule)
+- [Data Pipeline & update schedule]()
 - [Install](#Install)
 - [Usage](#usage)
 - [Final Write up](#Final Write up)
