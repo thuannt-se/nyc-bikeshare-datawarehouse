@@ -9,10 +9,10 @@ a data warehouse.
 ## Table of Contents
 
 - [Project Goal](#Project Goal)
-- [Technologies why I choose them]()
-- [Data modeling & dictionary]()
+- [Technologies why I choose them](#Technologies & why I choose them)
+- [Data modeling & dictionary](#Data modeling & dictionary)
 - [Data usage](#Data usage)
-- [Data Pipeline & update schedule]()
+- [Data Pipeline & update schedule](#Data Pipeline & update schedule)
 - [Install](#Install)
 - [Usage](#usage)
 - [Final Write up](#Final Write up)
@@ -26,7 +26,7 @@ data warehouse as a source of truth database for any kind of data explore to ide
 
 ## Technologies & why I choose them
 - **Airflow 2.0**
-  - It's newest Airflow version released on December 2020
+  - It's the newest Airflow version released on December 2020
   - It has massive Scheduler performance improvements
   - Better UI
   - And more...
@@ -61,7 +61,7 @@ For example we can answer some questions:
 - Which month has the highest number of bike trips and lowest bike trips?
 - How weather affect on user behavior?
 
-## Data Pipeline & update basis
+## Data Pipeline & update schedule
 The source data can be updated monthly or yearly. The data pipeline should not depend on the interval of data.
 The DAG runs through multiple tasks as below image. 
 
