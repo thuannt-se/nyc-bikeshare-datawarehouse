@@ -24,7 +24,7 @@ I combine the trip data with weather data from NOAA to create a **data warehouse
 2020 weather data of New York city. User can use this data warehouse to build up a dashboard, create BI report or use this
 data warehouse as a source of truth database for any kind of data explore to identity user basis
 
-##Technologies & why I choose them
+## Technologies & why I choose them
 - **Airflow 2.0**
   - It's newest Airflow version released on December 2020
   - It has massive Scheduler performance improvements
@@ -43,7 +43,7 @@ data warehouse as a source of truth database for any kind of data explore to ide
   - Very suitable for data warehouse due to its storage capacity and CPU power
   - Redshift has capability to process a large number of simultaneous queries.
 
-##Data modeling & dictionary
+## Data modeling & dictionary
 Data modeling is described as below image.
 ![Entity relation diagram](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/citibike-data-warehouse.jpeg)
 trip_fact entity would have 2 dimensions entity: dim_datetime, dim_station
@@ -52,7 +52,7 @@ trip_fact entity would have 2 dimensions entity: dim_datetime, dim_station
 weather_fact entity would have 1 dimensions entity: dim_datetime and one-to-many relationship with weather_type
 ![Dictionary](https://github.com/thuannt-se/nyc-bikeshare-datawarehouse/blob/main/resource/weather_fact_dictionary.png)
 
-##Data usage
+## Data usage
 Using the final database, we can explore the data and understand user behavior on using bike share service in New York City
 For example we can answer some questions:
 - How many trips are made by New york people make on monthly and yearly basic?
