@@ -8,14 +8,15 @@ a data warehouse.
 
 ## Table of Contents
 
-- [Project Goal](#Project Goal)
-- [Technologies why I choose them]()
-- [Data modeling & dictionary]()
-- [Data usage](#Data usage)
-- [Data Pipeline & update schedule]()
+- [Project Goal](#project-goal)
+- [Technologies why I choose them](#technologies--why-i-choose-them)
+- [Data modeling & dictionary](#data-modeling--dictionary)
+- [Data usage](#data-usage)
+- [Data Pipeline & update schedule](#data-pipeline--update-schedule)
 - [Install](#Install)
 - [Usage](#usage)
-- [Final Write up](#Final Write up)
+- [Final Write up](#final-write-up)
+
 
 ## Project Goal
 After analyzing the open trip data of the year 2020 from citi bike  
